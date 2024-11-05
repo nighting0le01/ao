@@ -13,17 +13,7 @@ from .subclass_fp8 import OptimStateFp8
 
 class _AdamBase(Optimizer):
     def __init__(
-        self,
-        params,
-        lr,
-        betas,
-        eps,
-        weight_decay,
-        amsgrad,
-        *,
-        block_size,
-        bf16_stochastic_round,
-        is_adamw,
+        self, params, lr, betas, eps, weight_decay, amsgrad, *, block_size, bf16_stochastic_round, is_adamw,exclude_low_bit_optim_params=None
     ) -> None:
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))

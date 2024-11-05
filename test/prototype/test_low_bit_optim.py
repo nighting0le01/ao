@@ -19,11 +19,8 @@ from torchao.prototype.low_bit_optim.quant_utils import (
     quantize_4bit_with_qmap,
     _fp32_to_bf16_sr,
 )
-from torchao.utils import (
-    TORCH_VERSION_AT_LEAST_2_3,
-    TORCH_VERSION_AT_LEAST_2_4,
-    TORCH_VERSION_AT_LEAST_2_6,
-)
+
+from torchao.utils import TORCH_VERSION_AT_LEAST_2_3, TORCH_VERSION_AT_LEAST_2_4, TORCH_VERSION_AT_LEAST_2_6
 
 try:
     import bitsandbytes as bnb
@@ -345,9 +342,8 @@ class TestOptim(TestCase):
             optim2.step()
             optim2.zero_grad()
 
-            torch.testing.assert_close(
-                loss1, loss2, msg=lambda msg: f"Iteration {idx}. {msg}"
-            )
+            torch.testing.assert_close(loss1, loss2, msg=lambda msg: f"Iteration {idx}. {msg}")
+            
 
     @pytest.mark.skipif(not TORCH_VERSION_AT_LEAST_2_3, reason="requires PyTorch >= 2.3")
     @parametrize("optim_name", ["Adam8bit", "AdamW8bit", "Adam4bit", "AdamW4bit", "AdamFp8", "AdamWFp8"])
