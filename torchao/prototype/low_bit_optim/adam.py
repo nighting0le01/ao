@@ -13,7 +13,7 @@ from .quant_utils import _fp32_to_bf16_sr
 
 class _AdamBase(Optimizer):
     def __init__(
-        self, params, lr, betas, eps, weight_decay, amsgrad, *, block_size, bf16_stochastic_round, is_adamw
+        self, params, lr, betas, eps, weight_decay, amsgrad, *, block_size, bf16_stochastic_round, is_adamw,exclude_low_bit_optim_params=None
     ) -> None:
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
@@ -28,6 +28,10 @@ class _AdamBase(Optimizer):
         self.block_size = block_size
         self.bf16_stochastic_round = bf16_stochastic_round
         self.is_adamw = is_adamw
+        # Store the IDs of parameters to exclude
+        self.exclude_low_bit_optim_params_ids = set(
+            id(p) for p in exclude_low_bit_optim_params
+        ) if exclude_low_bit_optim_params else set()
 
     def __setstate__(self, state):
         super().__setstate__(state)
@@ -42,7 +46,7 @@ class _AdamBase(Optimizer):
     # follow bitsandbytes, only quantize tensors >= 4096 values
     # also wrap subclass in DTensor when needed
     def _new_buffer(self, p: Tensor, signed: bool):
-        if p.numel() >= 4096 and p.numel() % self.block_size == 0:
+        if p.numel() >= 4096 and p.numel() % self.block_size == 0 and id(p) not in self.exclude_low_bit_optim_params_ids :
             if isinstance(p, DTensor):
                 out = DTensor.from_local(
                     local_tensor=self._subclass_zeros(p.to_local(), signed, self.block_size),
@@ -175,6 +179,7 @@ class Adam8bit(_AdamBase):
         *,
         block_size=256,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None,
     ) -> None:
         super().__init__(
             params,
@@ -186,6 +191,7 @@ class Adam8bit(_AdamBase):
             block_size=block_size,
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=False,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params
         )
 
     @staticmethod
@@ -205,6 +211,7 @@ class Adam4bit(_AdamBase):
         *,
         block_size=128,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None,
     ) -> None:
         super().__init__(
             params,
@@ -216,6 +223,7 @@ class Adam4bit(_AdamBase):
             block_size=block_size,
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=False,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params,
         )
 
     @staticmethod
@@ -235,6 +243,7 @@ class AdamFp8(_AdamBase):
         *,
         block_size=256,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None
     ) -> None:
         super().__init__(
             params,
@@ -246,6 +255,7 @@ class AdamFp8(_AdamBase):
             block_size=block_size,
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=False,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params
         )
 
     @staticmethod
@@ -265,6 +275,7 @@ class AdamW8bit(_AdamBase):
         *,
         block_size=256,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None
     ) -> None:
         super().__init__(
             params,
@@ -276,6 +287,7 @@ class AdamW8bit(_AdamBase):
             block_size=block_size,
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=True,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params
         )
 
     @staticmethod
@@ -295,6 +307,7 @@ class AdamW4bit(_AdamBase):
         *,
         block_size=128,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None
     ) -> None:
         super().__init__(
             params,
@@ -306,6 +319,7 @@ class AdamW4bit(_AdamBase):
             block_size=block_size,
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=True,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params
         )
 
     @staticmethod
@@ -325,6 +339,7 @@ class AdamWFp8(_AdamBase):
         *,
         block_size=256,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None
     ) -> None:
         super().__init__(
             params,
@@ -336,6 +351,7 @@ class AdamWFp8(_AdamBase):
             block_size=block_size,
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=True,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params
         )
 
     @staticmethod
@@ -354,6 +370,7 @@ class _AdamW(_AdamBase):
         amsgrad=False,
         *,
         bf16_stochastic_round=False,
+        exclude_low_bit_optim_params=None
     ) -> None:
         """AdamW optimizer that supports quantized training (parameter is quantized). This optimizer should
         only be used with torchao's quantized training."""
@@ -367,4 +384,5 @@ class _AdamW(_AdamBase):
             block_size=float("inf"),
             bf16_stochastic_round=bf16_stochastic_round,
             is_adamw=True,
+            exclude_low_bit_optim_params=exclude_low_bit_optim_params
         )
