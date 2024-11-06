@@ -19,8 +19,11 @@ from torchao.prototype.low_bit_optim.quant_utils import (
     quantize_4bit_with_qmap,
     _fp32_to_bf16_sr,
 )
-
-from torchao.utils import TORCH_VERSION_AT_LEAST_2_3, TORCH_VERSION_AT_LEAST_2_4, TORCH_VERSION_AT_LEAST_2_6
+from torchao.utils import (
+    TORCH_VERSION_AT_LEAST_2_3,
+    TORCH_VERSION_AT_LEAST_2_4,
+    TORCH_VERSION_AT_LEAST_2_6,
+)
 
 try:
     import bitsandbytes as bnb
