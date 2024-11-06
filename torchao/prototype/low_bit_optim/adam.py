@@ -2,13 +2,13 @@ from typing import Optional
 
 import torch
 from torch import Tensor
-from torch.optim import Optimizer
 from torch.distributed._tensor import DTensor
+from torch.optim import Optimizer
 
-from .subclass_8bit import OptimState8bit
-from .subclass_4bit import OptimState4bit
-from .subclass_fp8 import OptimStateFp8
 from .quant_utils import _fp32_to_bf16_sr
+from .subclass_4bit import OptimState4bit
+from .subclass_8bit import OptimState8bit
+from .subclass_fp8 import OptimStateFp8
 
 
 class _AdamBase(Optimizer):
@@ -23,7 +23,13 @@ class _AdamBase(Optimizer):
             raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
         if not 0.0 <= betas[1] < 1.0:
             raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
-        defaults = dict(lr=torch.tensor(lr), betas=betas, eps=eps, weight_decay=weight_decay, amsgrad=amsgrad)
+        defaults = dict(
+            lr=torch.tensor(lr),
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            amsgrad=amsgrad,
+        )
         super().__init__(params, defaults)
         self.block_size = block_size
         self.bf16_stochastic_round = bf16_stochastic_round
@@ -49,7 +55,9 @@ class _AdamBase(Optimizer):
         if p.numel() >= 4096 and p.numel() % self.block_size == 0 and id(p) not in self.exclude_low_bit_optim_params_ids :
             if isinstance(p, DTensor):
                 out = DTensor.from_local(
-                    local_tensor=self._subclass_zeros(p.to_local(), signed, self.block_size),
+                    local_tensor=self._subclass_zeros(
+                        p.to_local(), signed, self.block_size
+                    ),
                     device_mesh=p.device_mesh,
                     placements=p.placements,
                     run_check=False,
